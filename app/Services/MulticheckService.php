@@ -28,7 +28,7 @@ class MulticheckService
 
     public function check(string $username): array
     {
-        $client  = new Client(['timeout' => 10, 'verify' => false, 'headers' => [
+        $client  = new Client(['timeout' => 10, 'verify' => true, 'headers' => [
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         ]]);
         $results = [];

@@ -18,7 +18,7 @@ class LeakOsintController extends Controller
     public function search(Request $request)
     {
         $request->validate([
-            'query' => 'required|string|max:5000',
+            'query' => 'required|string|max:500',
             'limit' => 'integer|in:10,50,100,250,500,1000,5000,10000',
             'lang'  => 'string|in:en,ru,de,fr,es,it,pt,zh,ar',
         ]);

@@ -51,15 +51,20 @@
                 </div>
             </div>
         </div>
-        @if(!empty($result['lat']) && !empty($result['lon']))
+        @php
+            $lat = is_numeric($result['lat'] ?? '') ? (float) $result['lat'] : null;
+            $lon = is_numeric($result['lon'] ?? '') ? (float) $result['lon'] : null;
+        @endphp
+        @if($lat !== null && $lon !== null)
         <div class="card">
             <div class="card-header"><h3>🗺️ Peta</h3></div>
             <div style="height:300px;">
                 <iframe
                     width="100%" height="100%"
                     style="border:none;"
-                    src="https://maps.google.com/maps?q={{ $result['lat'] }},{{ $result['lon'] }}&z=10&output=embed"
-                    loading="lazy">
+                    src="https://maps.google.com/maps?q={{ $lat }},{{ $lon }}&z=10&output=embed"
+                    loading="lazy"
+                    sandbox="allow-scripts allow-same-origin">
                 </iframe>
             </div>
         </div>

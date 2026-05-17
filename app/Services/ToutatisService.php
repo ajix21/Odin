@@ -82,7 +82,8 @@ class ToutatisService
                 'id'            => $user['id'],
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            \Illuminate\Support\Facades\Log::warning('ToutatisService error', ['msg' => $e->getMessage()]);
+            return ['success' => false, 'error' => 'Gagal menghubungi Instagram. Coba lagi nanti.'];
         }
     }
 

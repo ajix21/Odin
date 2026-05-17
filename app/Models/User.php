@@ -24,6 +24,7 @@ class User extends Authenticatable
         'last_login_at'     => 'datetime',
         'is_active'         => 'boolean',
         'password'          => 'hashed',
+        'api_token'         => 'encrypted',
     ];
 
     public function isAdmin(): bool    { return $this->role === 'admin'; }

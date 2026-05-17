@@ -53,10 +53,10 @@ class AuthController extends Controller
                          ->withInput(['username' => $username]);
         }
 
+        $request->session()->regenerate();
         Auth::login($user, $request->boolean('remember'));
         $this->logAttempt($username, $ip, $request->userAgent(), true);
         $user->update(['last_login_at' => now(), 'last_login_ip' => $ip]);
-        $request->session()->regenerate();
 
         return redirect()->intended('/dashboard');
     }
@@ -74,7 +74,7 @@ class AuthController extends Controller
         LoginAttempt::create([
             'username'   => $username,
             'ip_address' => $ip,
-            'user_agent' => $ua,
+            'user_agent' => $ua ? substr($ua, 0, 500) : null,
             'success'    => $success,
             'created_at' => now(),
         ]);
