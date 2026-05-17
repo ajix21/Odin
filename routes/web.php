@@ -31,8 +31,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/phone-lookup', [PhoneLookupController::class, 'search'])->name('phone-lookup.search')
              ->middleware('throttle:30,1');
 
-        Route::get('/leakosint',  [LeakOsintController::class, 'index'])->name('leakosint');
-        Route::post('/leakosint', [LeakOsintController::class, 'search'])->name('leakosint.search')
+        Route::get('/leakosint',        [LeakOsintController::class, 'index'])->name('leakosint');
+        Route::post('/leakosint/query', [LeakOsintController::class, 'query'])->name('leakosint.query')
              ->middleware('throttle:30,1');
 
         Route::get('/multicheck',  [MulticheckController::class, 'index'])->name('multicheck');

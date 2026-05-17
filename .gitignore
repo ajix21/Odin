@@ -1,6 +1,8 @@
 *.log
 .DS_Store
 .env
+.claude/
+docs/security-review.md
 .env.backup
 .env.production
 .phpactor.json

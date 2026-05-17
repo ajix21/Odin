@@ -154,15 +154,48 @@ class GetContactService
 
         $detailResult = $this->numberDetail($phone);
 
+        $profile  = $searchResult['profile']          ?? [];
+        $spamInfo = $searchResult['spamInfo']         ?? [];
+        $subInfo  = $searchResult['subscriptionInfo'] ?? [];
+        $tags     = $detailResult['tags']             ?? [];
+
+        // Log raw untuk debugging field names
+        \Illuminate\Support\Facades\Log::debug('GetContact searchResult', $searchResult);
+        \Illuminate\Support\Facades\Log::debug('GetContact detailResult', $detailResult ?? []);
+
+        $displayName    = $profile['displayName']                      ?? ($profile['name'] ?? null);
+        $quotaRemaining = $subInfo['usage']['search']['remainingCount'] ?? null;
+        $quotaLimit     = $subInfo['usage']['search']['limit']          ?? null;
+        $quotaReset     = $subInfo['receiptEndDate']                    ?? null;
+        $quotaStatus    = $subInfo['premiumType']                       ?? ($subInfo['premiumTypeName'] ?? null);
+
         return [
-            'success'      => true,
-            'phone'        => $phone,
-            'profile'      => $searchResult['profile']            ?? [],
-            'badge'        => $searchResult['badge']              ?? null,
-            'spam'         => $searchResult['spamInfo']['degree'] ?? null,
-            'tag_count'    => $searchResult['tagCount']           ?? 0,
-            'tags'         => $detailResult['tags']               ?? [],
-            'subscription' => $searchResult['subscriptionInfo']   ?? [],
+            'success'         => true,
+            'phone'           => $phone,
+
+            'display_name'    => $displayName,
+            'email'           => $profile['email']    ?? null,
+            'country'         => $profile['country']  ?? null,
+            'phone_number'    => $profile['phoneNumber'] ?? $phone,
+            'profile_image'   => ($profile['displayProfileImage'] ?? false)
+                                  ? ($profile['profileImage'] ?? null)
+                                  : null,
+
+            'spam_degree'     => $spamInfo['degree']  ?? null,
+            'spam_count'      => $spamInfo['count']   ?? 0,
+
+            'tag_count'       => $searchResult['tagCount'] ?? count($tags),
+            'tags'            => $tags,
+
+            'badge'           => $searchResult['badge']   ?? null,
+            'subscription'    => $subInfo['type']         ?? null,
+
+            'quota_remaining' => $quotaRemaining,
+            'quota_limit'     => $quotaLimit,
+            'quota_reset'     => $quotaReset,
+            'quota_status'    => $quotaStatus,
+
+            'access_type'     => $searchResult['accessType'] ?? null,
         ];
     }
 }

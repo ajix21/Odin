@@ -20,7 +20,10 @@
     @csrf
 
     @php
-        $groups = collect($config)->groupBy('group');
+        $groups = [];
+        foreach($config as $key => $cfg) {
+            $groups[$cfg['group']][$key] = $cfg;
+        }
         $groupIcons = [
             'GetContact'  => '📱',
             'LeakOSINT'   => '💧',

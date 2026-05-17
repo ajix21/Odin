@@ -24,9 +24,20 @@
             <tr>
                 <td class="fw-6">{{ $log->user?->username ?? '—' }}</td>
                 <td>
-                    <span class="badge {{ $log->tool === 'getcontact' ? 'badge-blue' : 'badge-purple' }}">
-                        {{ $log->tool === 'getcontact' ? 'GetContact' : 'LeakOSINT' }}
-                    </span>
+                    @php
+                        $toolLabels = [
+                            'getcontact' => ['GetContact','badge-blue'],
+                            'leakosint'  => ['LeakOSINT','badge-purple'],
+                            'toutatis'   => ['Toutatis','badge-pink'],
+                            'whois'      => ['WHOIS','badge-cyan'],
+                            'ip-geo'     => ['IP Geo','badge-green'],
+                            'email-osint'=> ['Email OSINT','badge-yellow'],
+                            'multicheck' => ['Multicheck','badge-orange'],
+                            'phone-info' => ['Phone Info','badge-blue'],
+                        ];
+                        [$tLabel, $tBadge] = $toolLabels[$log->tool] ?? [ucfirst($log->tool), ''];
+                    @endphp
+                    <span class="badge {{ $tBadge }}">{{ $tLabel }}</span>
                 </td>
                 <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $log->query }}</td>
                 <td>

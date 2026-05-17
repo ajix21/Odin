@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SearchLog;
 use App\Services\IpGeolocationService;
 use Illuminate\Http\Request;
 
@@ -18,7 +19,19 @@ class IpGeoController extends Controller
     {
         $request->validate(['ip' => 'required|ip']);
 
-        $result = $this->service->lookup($request->input('ip'));
+        $ip     = $request->input('ip');
+        $result = $this->service->lookup($ip);
+
+        SearchLog::create([
+            'user_id'     => auth()->id(),
+            'tool'        => 'ip-geo',
+            'query'       => $ip,
+            'result_json' => ($result['success'] ?? false) ? ['country' => $result['country'] ?? null, 'isp' => $result['isp'] ?? null] : null,
+            'status'      => ($result['success'] ?? false) ? 'success' : 'failed',
+            'error_message' => $result['error'] ?? null,
+            'ip_address'  => $request->ip(),
+        ]);
+
         return view('tools.ip-geo', compact('result'));
     }
 }

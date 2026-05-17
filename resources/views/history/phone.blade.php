@@ -27,7 +27,7 @@
         @forelse($logs as $log)
         <tr>
             <td class="font-mono fw-6" style="font-size:13px;">{{ $log->query }}</td>
-            <td>{{ $log->result_json['profile']['name'] ?? '—' }}</td>
+            <td>{{ $log->result_json['display_name'] ?? ($log->result_json['profile']['displayName'] ?? '—') }}</td>
             @if(auth()->user()->isAdmin())
             <td>{{ $log->user?->username ?? '—' }}</td>
             @endif

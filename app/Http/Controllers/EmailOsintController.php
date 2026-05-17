@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SearchLog;
 use App\Services\EmailOsintService;
 use Illuminate\Http\Request;
 
@@ -18,7 +19,18 @@ class EmailOsintController extends Controller
     {
         $request->validate(['email' => 'required|email|max:200']);
 
-        $result = $this->service->analyze($request->input('email'));
+        $email  = $request->input('email');
+        $result = $this->service->analyze($email);
+
+        SearchLog::create([
+            'user_id'     => auth()->id(),
+            'tool'        => 'email-osint',
+            'query'       => $email,
+            'result_json' => ['valid' => $result['valid'] ?? false, 'disposable' => $result['disposable'] ?? false, 'gravatar' => (bool)($result['gravatar'] ?? false)],
+            'status'      => 'success',
+            'ip_address'  => $request->ip(),
+        ]);
+
         return view('tools.email-osint', compact('result'));
     }
 }

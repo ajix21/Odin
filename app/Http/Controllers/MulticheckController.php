@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SearchLog;
 use App\Services\MulticheckService;
 use Illuminate\Http\Request;
 
@@ -20,6 +21,17 @@ class MulticheckController extends Controller
 
         $username = $request->input('username');
         $results  = $this->service->check($username);
+
+        $found = collect($results)->where('found', true)->keys()->toArray();
+
+        SearchLog::create([
+            'user_id'     => auth()->id(),
+            'tool'        => 'multicheck',
+            'query'       => $username,
+            'result_json' => ['found_on' => $found, 'count' => count($found)],
+            'status'      => 'success',
+            'ip_address'  => $request->ip(),
+        ]);
 
         return view('tools.multicheck', compact('results', 'username'));
     }

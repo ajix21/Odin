@@ -15,39 +15,46 @@ class LeakOsintController extends Controller
         return view('tools.leakosint');
     }
 
-    public function search(Request $request)
+    public function query(Request $request)
     {
         $request->validate([
-            'query' => 'required|string|max:500',
-            'limit' => 'integer|in:10,50,100,250,500,1000,5000,10000',
-            'lang'  => 'string|in:en,ru,de,fr,es,it,pt,zh,ar',
+            'request' => 'required|string|max:5000',
+            'limit'   => 'integer|in:10,50,100,250,500,1000,5000,10000',
+            'lang'    => 'string|in:en,ru,de,fr,es,it,pt,zh,ar',
         ]);
 
         try {
-            $data   = $this->service->search(
-                $request->input('query'),
+            $data = $this->service->search(
+                $request->input('request'),
                 (int) $request->input('limit', 100),
                 $request->input('lang', 'en')
             );
             $status = 'success';
-            $error  = null;
+
+            SearchLog::create([
+                'user_id'     => auth()->id(),
+                'tool'        => 'leakosint',
+                'query'       => $request->input('request'),
+                'result_json' => ['NumOfResults' => $data['NumOfResults'] ?? 0, 'NumOfDatabase' => $data['NumOfDatabase'] ?? 0],
+                'status'      => 'success',
+                'ip_address'  => $request->ip(),
+            ]);
+
+            return response()->json($data);
+
         } catch (\Exception $e) {
-            $data   = [];
-            $status = 'failed';
-            $error  = $e->getMessage();
+            SearchLog::create([
+                'user_id'       => auth()->id(),
+                'tool'          => 'leakosint',
+                'query'         => $request->input('request'),
+                'result_json'   => null,
+                'status'        => 'failed',
+                'error_message' => $e->getMessage(),
+                'ip_address'    => $request->ip(),
+            ]);
+
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        SearchLog::create([
-            'user_id'       => auth()->id(),
-            'tool'          => 'leakosint',
-            'query'         => $request->input('query'),
-            'result_json'   => $data ?: null,
-            'status'        => $status,
-            'error_message' => $error,
-            'ip_address'    => $request->ip(),
-        ]);
-
-        return view('tools.leakosint', compact('data', 'status', 'error'));
     }
 
     public function history()

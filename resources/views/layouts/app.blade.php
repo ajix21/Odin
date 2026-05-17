@@ -139,12 +139,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-hide alerts
     document.querySelectorAll('.alert[data-auto-close]').forEach(function(el) {
         setTimeout(function() { el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(),400); }, 4000);
     });
 });
 </script>
-
+@stack('scripts')
 </body>
 </html>
