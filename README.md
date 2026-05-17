@@ -1,59 +1,189 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Project ODIN
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Platform OSINT (Open Source Intelligence) berbasis web yang dibangun dengan Laravel 12. Menyediakan berbagai alat investigasi digital dengan sistem manajemen pengguna berbasis peran.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Fitur
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Tools OSINT
+| Tool | Deskripsi |
+|------|-----------|
+| **Phone Lookup** | Mencari informasi pemilik nomor telepon via GetContact |
+| **LeakOSINT** | Menelusuri kebocoran data (email, nomor HP, dll.) dari database breach |
+| **Multicheck** | Mengecek keberadaan username di berbagai platform sekaligus |
+| **Email OSINT** | Analisis email — validasi, deteksi disposable, gravatar |
+| **Phone Info** | Analisis nomor telepon — negara, operator, tipe (mobile/VOIP) |
+| **IP Geolocation** | Lookup lokasi dan ISP dari alamat IP |
+| **WHOIS** | Pencarian informasi registrasi domain |
+| **Toutatis** | OSINT akun Instagram menggunakan session ID |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Manajemen & Administrasi
+- **Dashboard** — statistik pencarian harian/total, tool paling aktif, log aktivitas terbaru
+- **Manajemen User** — CRUD user dengan 3 peran: `admin`, `operator`, `viewer`
+- **Log Aktivitas** — riwayat pencarian per tool dan log percobaan login
+- **Pengaturan API** — konfigurasi token/key untuk setiap layanan eksternal, tersimpan terenkripsi
+- **Riwayat Pencarian** — history Phone Lookup dan LeakOSINT per user
+- **Export** — hasil dapat diekspor ke PDF dan Excel
 
-## Learning Laravel
+### Keamanan
+- Autentikasi session-based dengan tracking login attempt
+- Role-based access control (RBAC)
+- Rate limiting 30 request/menit per tool
+- Logging IP address setiap pencarian
+- Penyimpanan API key terenkripsi di database
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Persyaratan Sistem
 
-## Laravel Sponsors
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- SQLite (default) atau MySQL/MariaDB
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## Instalasi
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 1. Clone Repository
 
-## Contributing
+```bash
+git clone <repository-url>
+cd project-odin
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 2. Install Dependensi
 
-## Code of Conduct
+```bash
+composer install
+npm install
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 3. Konfigurasi Environment
 
-## Security Vulnerabilities
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Edit file `.env` sesuai kebutuhan:
 
-## License
+```env
+APP_NAME="Project ODIN"
+APP_URL=http://localhost
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Database (SQLite default, tidak perlu konfigurasi tambahan)
+DB_CONNECTION=sqlite
+
+# Gunakan MySQL jika diperlukan:
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=odin
+# DB_USERNAME=root
+# DB_PASSWORD=
+```
+
+### 4. Migrasi Database
+
+```bash
+php artisan migrate
+```
+
+### 5. Build Assets
+
+```bash
+npm run build
+```
+
+### 6. Buat Akun Admin Pertama
+
+Jalankan tinker untuk membuat user admin:
+
+```bash
+php artisan tinker
+```
+
+```php
+\App\Models\User::create([
+    'name'      => 'Administrator',
+    'username'  => 'admin',
+    'email'     => 'admin@example.com',
+    'password'  => bcrypt('Password@123'),
+    'role'      => 'admin',
+    'is_active' => true,
+]);
+```
+
+### 7. Jalankan Aplikasi
+
+```bash
+php artisan serve
+```
+
+Akses di `http://localhost:8000`
+
+---
+
+### Instalasi Cepat (Satu Perintah)
+
+```bash
+composer run setup
+```
+
+Perintah ini akan menjalankan `composer install`, generate key, migrate database, `npm install`, dan build assets secara otomatis.
+
+---
+
+## Konfigurasi API Keys
+
+Setelah login sebagai admin, buka menu **Settings** untuk mengisi API key yang dibutuhkan setiap tool:
+
+| Setting | Tool | Cara Mendapatkan |
+|---------|------|-----------------|
+| `getcontact_token` | Phone Lookup | Dari aplikasi GetContact (intercept traffic) |
+| `getcontact_final_key` | Phone Lookup | Dari aplikasi GetContact |
+| `getcontact_client_device_id` | Phone Lookup | Dari aplikasi GetContact |
+| `leakosint_api_token` | LeakOSINT | Daftar di leakosint.io |
+| `leakosint_api_url` | LeakOSINT | URL endpoint API LeakOSINT |
+| `ipinfo_token` | Phone Info & IP Geo | Daftar di ipinfo.io |
+| `instagram_session_id` | Toutatis | Cookie `sessionid` dari browser saat login Instagram |
+
+Semua nilai disimpan terenkripsi di database.
+
+---
+
+## Peran Pengguna
+
+| Peran | Dashboard | Tools OSINT | History | Admin Panel | Settings |
+|-------|-----------|-------------|---------|-------------|----------|
+| `admin` | ✅ | ✅ | ✅ (semua user) | ✅ | ✅ |
+| `operator` | ✅ | ✅ | ✅ (milik sendiri) | ❌ | ❌ |
+| `viewer` | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+---
+
+## Development
+
+Menjalankan semua service sekaligus (server, queue, log, vite):
+
+```bash
+composer run dev
+```
+
+Menjalankan test:
+
+```bash
+composer run test
+```
+
+---
+
+## Stack Teknologi
+
+- **Backend**: Laravel 12, PHP 8.2
+- **Frontend**: Blade, Tailwind CSS 4, Vite
+- **Database**: SQLite / MySQL
+- **Library**: `giggsey/libphonenumber-for-php`, `io-developer/php-whois`
+- **Export**: jsPDF, jspdf-autotable, xlsx
