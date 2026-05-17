@@ -23,13 +23,6 @@
             text-align: center;
             margin-bottom: 28px;
         }
-        .login-brand img {
-            width: 72px; height: 72px;
-            object-fit: contain;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(14,165,233,0.3);
-            margin-bottom: 14px;
-        }
         .login-brand h1 {
             font-family: 'Sora', sans-serif;
             font-size: 32px;
@@ -78,7 +71,6 @@
 <div class="login-wrap">
 
     <div class="login-brand">
-        <img src="{{ asset('icon.png') }}" alt="ODIN">
         <h1>ODIN</h1>
         <p>OPEN SOURCE INTELLIGENCE PLATFORM</p>
     </div>
