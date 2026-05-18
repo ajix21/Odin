@@ -125,6 +125,14 @@ class ToutatisService
 
                     $result = $this->buildResult($username, $user, 'private');
 
+                    // Fetch recent posts via feed API (web_profile_info no longer includes post content)
+                    if (!empty($result['id'])) {
+                        $posts = $this->fetchRecentPosts($result['id'], $headers);
+                        if (!empty($posts)) {
+                            $result['recent_posts'] = $posts;
+                        }
+                    }
+
                     $lookup = $this->fetchLookup($username);
                     $result['obfuscated_email'] = $lookup['obfuscated_email'] ?? null;
                     $result['obfuscated_phone'] = $lookup['obfuscated_phone'] ?? null;
@@ -202,6 +210,63 @@ class ToutatisService
         }
 
         return $empty;
+    }
+
+    private function fetchRecentPosts(string $userId, array $headers): array
+    {
+        try {
+            $res = Http::withHeaders($headers)
+                ->timeout(15)
+                ->get("https://www.instagram.com/api/v1/feed/user/{$userId}/?count=3");
+
+            \Illuminate\Support\Facades\Log::debug('Toutatis feed HTTP', [
+                'userId'       => $userId,
+                'status'       => $res->status(),
+                'body_preview' => substr($res->body(), 0, 300),
+            ]);
+
+            if (!$res->ok()) {
+                return [];
+            }
+
+            $items = $res->json('items') ?? [];
+            $posts = [];
+
+            foreach (array_slice($items, 0, 3) as $item) {
+                $sc        = $item['code'] ?? null;
+                $mediaType = $item['media_type'] ?? 1;
+                $isVideo   = $mediaType === 2;
+                $typename  = match ($mediaType) {
+                    2       => 'GraphVideo',
+                    8       => 'GraphSidecar',
+                    default => 'GraphImage',
+                };
+
+                $image = $item['image_versions2']['candidates'][0]['url']
+                    ?? ($item['carousel_media'][0]['image_versions2']['candidates'][0]['url'] ?? null);
+
+                $posts[] = [
+                    'shortcode' => $sc,
+                    'url'       => $sc ? "https://www.instagram.com/p/{$sc}/" : null,
+                    'image'     => $image,
+                    'caption'   => $item['caption']['text'] ?? null,
+                    'likes'     => $item['like_count']    ?? 0,
+                    'comments'  => $item['comment_count'] ?? 0,
+                    'is_video'  => $isVideo,
+                    'type'      => $typename,
+                    'timestamp' => $item['taken_at'] ?? null,
+                ];
+            }
+
+            return $posts;
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Toutatis feed error', [
+                'userId' => $userId,
+                'msg'    => $e->getMessage(),
+            ]);
+            return [];
+        }
     }
 
     private function fetchPublic(string $username): array
