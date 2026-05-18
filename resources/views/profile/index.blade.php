@@ -8,10 +8,6 @@
     <p>Kelola informasi akun dan ubah password</p>
 </div>
 
-@if(session('success'))
-<div class="alert alert-success" data-auto-close style="margin-bottom:16px;">{{ session('success') }}</div>
-@endif
-
 <div style="max-width:520px;">
     <form method="POST" action="{{ route('profile.update') }}">
         @csrf

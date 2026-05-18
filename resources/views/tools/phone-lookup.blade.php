@@ -8,7 +8,7 @@
         <h1>📱 Phone Lookup</h1>
         <p>Cari informasi nomor telepon via GetContact API</p>
     </div>
-    <a href="{{ route('history.phone') }}" class="btn btn-secondary btn-sm">🕐 Riwayat</a>
+    <a href="{{ route('history') }}?tool=getcontact" class="btn btn-secondary btn-sm">🕐 Riwayat</a>
 </div>
 
 <div class="tool-input-card" style="max-width:520px;">

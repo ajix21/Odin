@@ -8,10 +8,6 @@
     <p>Konfigurasi API key dan credential untuk semua tools ODIN</p>
 </div>
 
-@if(session('success'))
-<div class="alert alert-success" data-auto-close>✓ {{ session('success') }}</div>
-@endif
-
 <div class="alert alert-warning">
     ⚠ <div>Credential disimpan <strong>terenkripsi</strong>. Kosongkan field untuk tidak mengubah nilai yang tersimpan.</div>
 </div>
