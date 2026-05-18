@@ -131,44 +131,66 @@ function renderResults({ username, results }) {
     panel.innerHTML = html;
 }
 
+// Badge warna per metode verifikasi
+const METHOD_BADGE = {
+    'API':     'background:#dbeafe;color:#1d4ed8;',
+    'HTTP':    'background:#dcfce7;color:#166534;',
+    'Content': 'background:#fef9c3;color:#854d0e;',
+};
+
+function methodBadge(method) {
+    const style = METHOD_BADGE[method] || 'background:#f1f5f9;color:#475569;';
+    return `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;${style}">${escHtml(method)}</span>`;
+}
+
 function buildCard(platform, data) {
-    const unreliable = !data.reliable;
     const isError    = !!data.error;
+    const unreliable = !data.reliable;
 
     if (data.found) {
-        const reliabilityNote = unreliable
-            ? `<div style="font-size:10px;color:#92400e;margin-top:2px;" title="Platform ini menggunakan bot-protection, hasil mungkin tidak akurat">⚠ Belum terverifikasi</div>`
-            : `<div style="font-size:10px;color:var(--c-text-3);margin-top:2px;">HTTP ${data.status}</div>`;
+        const subtitle = unreliable
+            ? `<div style="font-size:11px;color:#b45309;margin-top:3px;" title="Platform ini menggunakan bot-protection — hasil mungkin tidak akurat">⚠ Belum terverifikasi pasti</div>`
+            : `<div style="font-size:11px;color:var(--c-success);margin-top:3px;">Akun ditemukan →</div>`;
 
         return `
         <a href="${escHtml(data.url)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
             <div class="card" style="padding:14px 16px;border-left:3px solid var(--c-success);cursor:pointer;transition:all .15s;"
                  onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(16,185,129,.15)'"
                  onmouseout="this.style.transform='';this.style.boxShadow=''">
-                <div class="flex-between">
+                <div class="flex-between" style="gap:6px;">
                     <span class="fw-6" style="font-size:13px;color:var(--c-text);">${escHtml(platform)}</span>
-                    <span style="font-size:16px;">✅</span>
+                    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                        ${methodBadge(data.method)}
+                        <span style="font-size:15px;">✅</span>
+                    </div>
                 </div>
-                <div style="font-size:11px;color:var(--c-success);margin-top:4px;">Akun ditemukan →</div>
-                ${reliabilityNote}
+                ${subtitle}
             </div>
         </a>`;
     }
 
     // Not found
-    const note = isError
-        ? `<div style="font-size:11px;color:#ef4444;margin-top:4px;">Gagal terhubung</div>`
-        : unreliable
-            ? `<div style="font-size:11px;color:var(--c-text-3);margin-top:4px;">Tidak ada / tidak pasti</div>`
-            : `<div style="font-size:11px;color:var(--c-text-3);margin-top:4px;">Tidak tersedia</div>`;
+    const isBlocked = !!data.blocked;
+    const subtitle = isError
+        ? `<div style="font-size:11px;color:#ef4444;margin-top:3px;">Gagal terhubung</div>`
+        : isBlocked
+            ? `<div style="font-size:11px;color:#b45309;margin-top:3px;" title="Platform memblokir request bot (HTTP ${data.status})">⚠ Terblokir (HTTP ${data.status})</div>`
+            : unreliable
+                ? `<div style="font-size:11px;color:var(--c-text-3);margin-top:3px;">Tidak ada / tidak pasti</div>`
+                : `<div style="font-size:11px;color:var(--c-text-3);margin-top:3px;">Tidak tersedia</div>`;
+
+    const icon = isError ? '🔌' : isBlocked ? '⛔' : '❌';
 
     return `
     <div class="card" style="padding:14px 16px;border-left:3px solid var(--c-border);opacity:.75;">
-        <div class="flex-between">
+        <div class="flex-between" style="gap:6px;">
             <span class="fw-6" style="font-size:13px;color:var(--c-text);">${escHtml(platform)}</span>
-            <span style="font-size:16px;">${isError ? '🔌' : '❌'}</span>
+            <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                ${(isError || isBlocked) ? '' : methodBadge(data.method)}
+                <span style="font-size:15px;">${icon}</span>
+            </div>
         </div>
-        ${note}
+        ${subtitle}
     </div>`;
 }
 </script>
