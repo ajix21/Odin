@@ -55,14 +55,13 @@ class ToutatisService
 
     private function fetchPrivate(string $username): array
     {
+        // web_profile_info dengan browser UA + sessionid sudah mengembalikan biography lengkap
         $headers = [
-            'User-Agent'      => 'Instagram 219.0.0.12.117 Android (28/9; 420dpi; 1080x2200; samsung; SM-G975F; beyond2; exynos9820; en_US; 301484483)',
+            'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
             'Cookie'          => "sessionid={$this->sessionId}",
             'Accept'          => '*/*',
             'Accept-Language' => 'en-US,en;q=0.9',
             'X-IG-App-ID'     => '936619743392459',
-            'X-ASBD-ID'       => '198387',
-            'Origin'          => 'https://www.instagram.com',
             'Referer'         => "https://www.instagram.com/{$username}/",
         ];
 
@@ -98,7 +97,15 @@ class ToutatisService
                     'full_name' => $user['full_name'] ?? '(key missing)',
                     'username'  => $user['username']  ?? '(key missing)',
                 ]);
-                return $this->buildResult($username, $user, 'private');
+
+                $result = $this->buildResult($username, $user, 'private');
+
+                // Tambahkan obfuscated registration email/phone via lookup endpoint
+                $lookup = $this->fetchLookup($username);
+                $result['obfuscated_email'] = $lookup['obfuscated_email'] ?? null;
+                $result['obfuscated_phone'] = $lookup['obfuscated_phone'] ?? null;
+
+                return $result;
 
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::warning('Toutatis private error', ['msg' => $e->getMessage()]);
@@ -106,6 +113,64 @@ class ToutatisService
         }
 
         return ['success' => false, 'error' => 'Rate limit aktif.', 'rate_limited' => true];
+    }
+
+    private function fetchLookup(string $username): array
+    {
+        $empty = ['obfuscated_email' => null, 'obfuscated_phone' => null];
+
+        $body = 'signed_body=SIGNATURE.' . urlencode(json_encode(
+            ['q' => $username, 'skip_recovery' => '1'],
+            JSON_UNESCAPED_SLASHES
+        ));
+
+        $headers = [
+            'User-Agent'      => 'Instagram 314.0.0.35.109 Android (30/11; 420dpi; 1080x2148; samsung; SM-G975U; beyond2q; qcom; en_US; 548756459)',
+            'Content-Type'    => 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-IG-App-ID'     => '124024574287414',
+            'Accept-Language' => 'en-US',
+            'Accept-Encoding' => 'gzip, deflate',
+            'Cookie'          => "sessionid={$this->sessionId}",
+        ];
+
+        // 3 percobaan dengan jeda 3s → 6s jika rate-limited
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            try {
+                $res = Http::withHeaders($headers)
+                    ->timeout(8)
+                    ->post('https://i.instagram.com/api/v1/users/lookup/', $body);
+
+                \Illuminate\Support\Facades\Log::debug('Toutatis lookup HTTP', [
+                    'attempt'      => $attempt + 1,
+                    'status'       => $res->status(),
+                    'body_preview' => substr($res->body(), 0, 200),
+                ]);
+
+                if ($res->status() === 429) {
+                    if ($attempt < 2) {
+                        sleep(3 * (2 ** $attempt)); // 3s → 6s
+                        continue;
+                    }
+                    return $empty;
+                }
+
+                if (!$res->ok()) {
+                    return $empty;
+                }
+
+                $data = $res->json();
+                return [
+                    'obfuscated_email' => $data['obfuscated_email'] ?? null,
+                    'obfuscated_phone' => $data['obfuscated_phone'] ?? null,
+                ];
+
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Toutatis lookup error', ['msg' => $e->getMessage()]);
+                return $empty;
+            }
+        }
+
+        return $empty;
     }
 
     private function fetchPublic(string $username): array

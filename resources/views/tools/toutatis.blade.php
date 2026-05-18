@@ -123,9 +123,11 @@
         {{-- Kontak & Lokasi --}}
         @php
             $contacts = array_filter([
-                'Email'   => $result['email']   ?? null,
-                'Telepon' => $result['phone']   ?? null,
-                'Alamat'  => $result['address'] ?? null,
+                'Email Publik'    => $result['email']             ?? null,
+                'Telepon Publik'  => $result['phone']             ?? null,
+                'Email (Reg.)'    => $result['obfuscated_email']  ?? null,
+                'Telepon (Reg.)'  => $result['obfuscated_phone']  ?? null,
+                'Alamat'          => $result['address']           ?? null,
             ]);
         @endphp
         @if($contacts)
