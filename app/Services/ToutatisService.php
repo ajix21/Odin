@@ -8,16 +8,43 @@ use Illuminate\Support\Facades\Http;
 
 class ToutatisService
 {
-    private string $sessionId;
+    /** @var array<int,string> Session ID yang dikonfigurasi (index 0–2) */
+    private array $sessions;
 
     public function __construct()
     {
-        $this->sessionId = Setting::getValue('instagram_session_id');
+        $this->sessions = array_values(array_filter([
+            Setting::getValue('instagram_session_id'),
+            Setting::getValue('instagram_session_id_2'),
+            Setting::getValue('instagram_session_id_3'),
+        ]));
     }
 
     public function isConfigured(): bool
     {
-        return !empty($this->sessionId);
+        return count($this->sessions) > 0;
+    }
+
+    /**
+     * Kembalikan session pertama yang tidak sedang rate-limited untuk endpoint tertentu.
+     * $type: 'profile' atau 'lookup'
+     */
+    private function pickSession(string $type): ?string
+    {
+        foreach ($this->sessions as $i => $sid) {
+            if (!Cache::has("toutatis_rl_{$type}:s{$i}")) {
+                return $sid;
+            }
+        }
+        return null; // semua session sedang rate-limited
+    }
+
+    private function markRateLimited(string $type, string $session, int $seconds = 120): void
+    {
+        $idx = array_search($session, $this->sessions, true);
+        if ($idx !== false) {
+            Cache::put("toutatis_rl_{$type}:s{$idx}", true, now()->addSeconds($seconds));
+        }
     }
 
     private const API_ENDPOINTS = [
@@ -32,14 +59,13 @@ class ToutatisService
             return $cached;
         }
 
-        // Coba private API jika session tersedia dan tidak sedang rate-limit
-        if ($this->isConfigured() && !Cache::has("toutatis_rl:{$username}")) {
+        // Coba private API — rotasi antar session yang tersedia
+        if ($this->isConfigured()) {
             $result = $this->fetchPrivate($username);
             if ($result['success']) {
                 Cache::put($cacheKey, $result, now()->addMinutes(5));
                 return $result;
             }
-            // Jika 429, langsung fallback ke publik
             if (!($result['rate_limited'] ?? false)) {
                 return $result; // error lain (401/403/not found) — tidak perlu fallback
             }
@@ -55,112 +81,127 @@ class ToutatisService
 
     private function fetchPrivate(string $username): array
     {
-        $dsUserId = explode('%3A', $this->sessionId)[0];
+        // Coba tiap session hingga salah satu berhasil
+        foreach ($this->sessions as $session) {
+            if (Cache::has("toutatis_rl_profile:s" . array_search($session, $this->sessions, true))) {
+                continue;
+            }
 
-        // web_profile_info dengan browser UA + sessionid sudah mengembalikan biography lengkap
-        $headers = [
-            'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            'Cookie'          => "sessionid={$this->sessionId}; ds_user_id={$dsUserId}",
-            'Accept'          => '*/*',
-            'Accept-Language' => 'en-US,en;q=0.9',
-            'X-IG-App-ID'     => '936619743392459',
-            'Referer'         => "https://www.instagram.com/{$username}/",
-        ];
+            $dsUserId = explode('%3A', $session)[0];
+            $headers  = [
+                'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Cookie'          => "sessionid={$session}; ds_user_id={$dsUserId}",
+                'Accept'          => '*/*',
+                'Accept-Language' => 'en-US,en;q=0.9',
+                'X-IG-App-ID'     => '936619743392459',
+                'Referer'         => "https://www.instagram.com/{$username}/",
+            ];
 
-        foreach (self::API_ENDPOINTS as $tpl) {
-            $url = str_replace('{u}', $username, $tpl);
-            try {
-                $res = Http::withHeaders($headers)->timeout(15)->get($url);
+            foreach (self::API_ENDPOINTS as $tpl) {
+                $url = str_replace('{u}', $username, $tpl);
+                try {
+                    $res = Http::withHeaders($headers)->timeout(15)->get($url);
 
-                \Illuminate\Support\Facades\Log::debug('Toutatis private HTTP', [
-                    'url'    => $url,
-                    'status' => $res->status(),
-                    'body_preview' => substr($res->body(), 0, 200),
-                ]);
+                    \Illuminate\Support\Facades\Log::debug('Toutatis private HTTP', [
+                        'url'    => $url,
+                        'status' => $res->status(),
+                        'body_preview' => substr($res->body(), 0, 200),
+                    ]);
 
-                if ($res->status() === 429) {
-                    $retry = (int) ($res->header('Retry-After') ?: 120);
-                    Cache::put("toutatis_rl:{$username}", true, now()->addSeconds($retry));
-                    continue;
+                    if ($res->status() === 429) {
+                        $retry = (int) ($res->header('Retry-After') ?: 120);
+                        $this->markRateLimited('profile', $session, $retry);
+                        break; // coba session berikutnya
+                    }
+                    if (in_array($res->status(), [401, 403])) {
+                        return ['success' => false, 'error' => 'Session ID tidak valid atau kedaluwarsa. Perbarui di Settings.'];
+                    }
+                    if (!$res->ok()) continue;
+
+                    $user = $res->json('data.user');
+                    if (!$user) {
+                        return ['success' => false, 'error' => 'Username tidak ditemukan atau akun privat.'];
+                    }
+
+                    $result = $this->buildResult($username, $user, 'private');
+
+                    $lookup = $this->fetchLookup($username);
+                    $result['obfuscated_email'] = $lookup['obfuscated_email'] ?? null;
+                    $result['obfuscated_phone'] = $lookup['obfuscated_phone'] ?? null;
+
+                    return $result;
+
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Toutatis private error', ['msg' => $e->getMessage()]);
                 }
-                if (in_array($res->status(), [401, 403])) {
-                    return ['success' => false, 'error' => 'Session ID tidak valid atau kedaluwarsa. Perbarui di Settings.'];
-                }
-                if (!$res->ok()) continue;
-
-                $user = $res->json('data.user');
-                if (!$user) {
-                    return ['success' => false, 'error' => 'Username tidak ditemukan atau akun privat.'];
-                }
-
-                \Illuminate\Support\Facades\Log::debug('Toutatis private user keys', [
-                    'keys'      => array_keys($user),
-                    'biography' => $user['biography'] ?? '(key missing)',
-                    'full_name' => $user['full_name'] ?? '(key missing)',
-                    'username'  => $user['username']  ?? '(key missing)',
-                ]);
-
-                $result = $this->buildResult($username, $user, 'private');
-
-                // Tambahkan obfuscated registration email/phone via lookup endpoint
-                $lookup = $this->fetchLookup($username);
-                $result['obfuscated_email'] = $lookup['obfuscated_email'] ?? null;
-                $result['obfuscated_phone'] = $lookup['obfuscated_phone'] ?? null;
-
-                return $result;
-
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Toutatis private error', ['msg' => $e->getMessage()]);
             }
         }
 
-        return ['success' => false, 'error' => 'Rate limit aktif.', 'rate_limited' => true];
+        return ['success' => false, 'error' => 'Semua session sedang rate-limited. Coba lagi dalam beberapa menit.', 'rate_limited' => true];
     }
 
     private function fetchLookup(string $username): array
     {
-        $empty = ['obfuscated_email' => null, 'obfuscated_phone' => null];
+        $empty       = ['obfuscated_email' => null, 'obfuscated_phone' => null];
+        $signedBody  = 'SIGNATURE.' . json_encode(
+            ['q' => $username, 'skip_recovery' => '1'],
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+        );
 
-        // ds_user_id = angka sebelum ':' di session (format: userid:hash:num:token)
-        $dsUserId = explode('%3A', $this->sessionId)[0];
-
-        try {
-            $res = Http::withHeaders([
-                'User-Agent'      => 'Instagram 314.0.0.35.109 Android (30/11; 420dpi; 1080x2148; samsung; SM-G975U; beyond2q; qcom; en_US; 548756459)',
-                'X-IG-App-ID'     => '124024574287414',
-                'Accept-Language' => 'en-US',
-                'Accept-Encoding' => 'gzip, deflate',
-                'Host'            => 'i.instagram.com',
-                'Cookie'          => "sessionid={$this->sessionId}; ds_user_id={$dsUserId}",
-            ])
-            ->asForm()
-            ->timeout(5)
-            ->post('https://i.instagram.com/api/v1/users/lookup/', [
-                'signed_body' => 'SIGNATURE.' . json_encode(
-                    ['q' => $username, 'skip_recovery' => '1'],
-                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-                ),
-            ]);
-
-            \Illuminate\Support\Facades\Log::debug('Toutatis lookup HTTP', [
-                'status'       => $res->status(),
-                'body_preview' => substr($res->body(), 0, 300),
-            ]);
-
-            if (!$res->ok()) {
-                return $empty;
+        // Rotasi tiap session — pakai yang tidak sedang rate-limited untuk lookup
+        foreach ($this->sessions as $i => $session) {
+            if (Cache::has("toutatis_rl_lookup:s{$i}")) {
+                continue;
             }
 
-            $data = $res->json();
-            return [
-                'obfuscated_email' => $data['obfuscated_email'] ?? null,
-                'obfuscated_phone' => $data['obfuscated_phone'] ?? null,
-            ];
+            $dsUserId = explode('%3A', $session)[0];
 
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Toutatis lookup error', ['msg' => $e->getMessage()]);
-            return $empty;
+            try {
+                $res = Http::withHeaders([
+                    'User-Agent'      => 'Instagram 314.0.0.35.109 Android (30/11; 420dpi; 1080x2148; samsung; SM-G975U; beyond2q; qcom; en_US; 548756459)',
+                    'X-IG-App-ID'     => '124024574287414',
+                    'Accept-Language' => 'en-US',
+                    'Accept-Encoding' => 'gzip, deflate',
+                    'Host'            => 'i.instagram.com',
+                    'Cookie'          => "sessionid={$session}; ds_user_id={$dsUserId}",
+                ])
+                ->asForm()
+                ->timeout(5)
+                ->post('https://i.instagram.com/api/v1/users/lookup/', [
+                    'signed_body' => $signedBody,
+                ]);
+
+                \Illuminate\Support\Facades\Log::debug('Toutatis lookup HTTP', [
+                    'session_idx'  => $i,
+                    'status'       => $res->status(),
+                    'body_preview' => substr($res->body(), 0, 300),
+                ]);
+
+                if ($res->status() === 429) {
+                    $retry = (int) ($res->header('Retry-After') ?: 120);
+                    Cache::put("toutatis_rl_lookup:s{$i}", true, now()->addSeconds($retry));
+                    continue; // coba session berikutnya
+                }
+
+                if (!$res->ok()) {
+                    continue;
+                }
+
+                $data = $res->json();
+                return [
+                    'obfuscated_email' => $data['obfuscated_email'] ?? null,
+                    'obfuscated_phone' => $data['obfuscated_phone'] ?? null,
+                ];
+
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Toutatis lookup error', [
+                    'session_idx' => $i,
+                    'msg'         => $e->getMessage(),
+                ]);
+            }
         }
+
+        return $empty;
     }
 
     private function fetchPublic(string $username): array

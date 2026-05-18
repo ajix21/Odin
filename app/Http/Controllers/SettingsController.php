@@ -14,7 +14,9 @@ class SettingsController extends Controller
         'leakosint_api_token'         => ['label' => 'LeakOSINT API Token',         'secret' => true,  'group' => 'LeakOSINT'],
         'leakosint_api_url'           => ['label' => 'LeakOSINT API URL',           'secret' => false, 'group' => 'LeakOSINT'],
         'ipinfo_token'                => ['label' => 'IPInfo Token',                'secret' => true,  'group' => 'Phone OSINT'],
-        'instagram_session_id'        => ['label' => 'Instagram Session ID',        'secret' => true,  'group' => 'Toutatis'],
+        'instagram_session_id'        => ['label' => 'Instagram Session ID #1',      'secret' => true,  'group' => 'Toutatis'],
+        'instagram_session_id_2'      => ['label' => 'Instagram Session ID #2',      'secret' => true,  'group' => 'Toutatis'],
+        'instagram_session_id_3'      => ['label' => 'Instagram Session ID #3',      'secret' => true,  'group' => 'Toutatis'],
     ];
 
     public function index()
