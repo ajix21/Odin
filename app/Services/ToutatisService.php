@@ -55,10 +55,12 @@ class ToutatisService
 
     private function fetchPrivate(string $username): array
     {
+        $dsUserId = explode('%3A', $this->sessionId)[0];
+
         // web_profile_info dengan browser UA + sessionid sudah mengembalikan biography lengkap
         $headers = [
             'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            'Cookie'          => "sessionid={$this->sessionId}",
+            'Cookie'          => "sessionid={$this->sessionId}; ds_user_id={$dsUserId}",
             'Accept'          => '*/*',
             'Accept-Language' => 'en-US,en;q=0.9',
             'X-IG-App-ID'     => '936619743392459',
@@ -119,58 +121,46 @@ class ToutatisService
     {
         $empty = ['obfuscated_email' => null, 'obfuscated_phone' => null];
 
-        $body = 'signed_body=SIGNATURE.' . urlencode(json_encode(
-            ['q' => $username, 'skip_recovery' => '1'],
-            JSON_UNESCAPED_SLASHES
-        ));
+        // ds_user_id = angka sebelum ':' di session (format: userid:hash:num:token)
+        $dsUserId = explode('%3A', $this->sessionId)[0];
 
-        $headers = [
-            'User-Agent'      => 'Instagram 314.0.0.35.109 Android (30/11; 420dpi; 1080x2148; samsung; SM-G975U; beyond2q; qcom; en_US; 548756459)',
-            'Content-Type'    => 'application/x-www-form-urlencoded; charset=UTF-8',
-            'X-IG-App-ID'     => '124024574287414',
-            'Accept-Language' => 'en-US',
-            'Accept-Encoding' => 'gzip, deflate',
-            'Cookie'          => "sessionid={$this->sessionId}",
-        ];
+        try {
+            $res = Http::withHeaders([
+                'User-Agent'      => 'Instagram 314.0.0.35.109 Android (30/11; 420dpi; 1080x2148; samsung; SM-G975U; beyond2q; qcom; en_US; 548756459)',
+                'X-IG-App-ID'     => '124024574287414',
+                'Accept-Language' => 'en-US',
+                'Accept-Encoding' => 'gzip, deflate',
+                'Host'            => 'i.instagram.com',
+                'Cookie'          => "sessionid={$this->sessionId}; ds_user_id={$dsUserId}",
+            ])
+            ->asForm()
+            ->timeout(5)
+            ->post('https://i.instagram.com/api/v1/users/lookup/', [
+                'signed_body' => 'SIGNATURE.' . json_encode(
+                    ['q' => $username, 'skip_recovery' => '1'],
+                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+                ),
+            ]);
 
-        // 3 percobaan dengan jeda 3s → 6s jika rate-limited
-        for ($attempt = 0; $attempt < 3; $attempt++) {
-            try {
-                $res = Http::withHeaders($headers)
-                    ->timeout(8)
-                    ->post('https://i.instagram.com/api/v1/users/lookup/', $body);
+            \Illuminate\Support\Facades\Log::debug('Toutatis lookup HTTP', [
+                'status'       => $res->status(),
+                'body_preview' => substr($res->body(), 0, 300),
+            ]);
 
-                \Illuminate\Support\Facades\Log::debug('Toutatis lookup HTTP', [
-                    'attempt'      => $attempt + 1,
-                    'status'       => $res->status(),
-                    'body_preview' => substr($res->body(), 0, 200),
-                ]);
-
-                if ($res->status() === 429) {
-                    if ($attempt < 2) {
-                        sleep(3 * (2 ** $attempt)); // 3s → 6s
-                        continue;
-                    }
-                    return $empty;
-                }
-
-                if (!$res->ok()) {
-                    return $empty;
-                }
-
-                $data = $res->json();
-                return [
-                    'obfuscated_email' => $data['obfuscated_email'] ?? null,
-                    'obfuscated_phone' => $data['obfuscated_phone'] ?? null,
-                ];
-
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Toutatis lookup error', ['msg' => $e->getMessage()]);
+            if (!$res->ok()) {
                 return $empty;
             }
-        }
 
-        return $empty;
+            $data = $res->json();
+            return [
+                'obfuscated_email' => $data['obfuscated_email'] ?? null,
+                'obfuscated_phone' => $data['obfuscated_phone'] ?? null,
+            ];
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Toutatis lookup error', ['msg' => $e->getMessage()]);
+            return $empty;
+        }
     }
 
     private function fetchPublic(string $username): array
@@ -315,11 +305,11 @@ class ToutatisService
             'account_type'  => $accountType,
             'category'      => $user['category_name'] ?? null,
 
-            // Kontak (obfuscated)
-            'email'         => !empty($user['public_email'])
-                                ? $this->obfuscate($user['public_email']) : null,
-            'phone'         => !empty($user['public_phone_number'])
-                                ? $this->obfuscate($user['public_phone_number']) : null,
+            // Kontak publik bisnis (web_profile_info menggunakan business_email/business_phone_number)
+            'email'         => $user['business_email'] ?? ($user['public_email'] ?? null) ?: null,
+            'phone'         => !empty($user['business_phone_number'])
+                                ? "+{$user['business_country_code']} {$user['business_phone_number']}"
+                                : ($user['public_phone_number'] ?? null),
 
             // Lokasi
             'address'       => $address,
