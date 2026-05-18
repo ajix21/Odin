@@ -55,9 +55,6 @@
             <span class="sidebar-icon">📋</span> Phone OSINT
         </a>
         @endif
-        <a href="{{ route('history.phone') }}" class="sidebar-item {{ request()->routeIs('history.phone') ? 'active' : '' }}">
-            <span class="sidebar-icon">🕐</span> Riwayat Phone
-        </a>
     </div>
 
     <hr class="sidebar-divider">
@@ -97,9 +94,6 @@
         <div class="sidebar-label">🔍 Data Breach</div>
         <a href="{{ route('leakosint') }}" class="sidebar-item {{ request()->routeIs('leakosint*') ? 'active' : '' }}">
             <span class="sidebar-icon">💧</span> LeakOSINT
-        </a>
-        <a href="{{ route('history.leakosint') }}" class="sidebar-item {{ request()->routeIs('history.leakosint') ? 'active' : '' }}">
-            <span class="sidebar-icon">🕐</span> Riwayat Leak
         </a>
     </div>
     @endif
