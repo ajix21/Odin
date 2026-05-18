@@ -31,46 +31,45 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:operator,admin'])->group(function () {
         Route::get('/phone-lookup',  [PhoneLookupController::class, 'index'])->name('phone-lookup');
         Route::post('/phone-lookup', [PhoneLookupController::class, 'search'])->name('phone-lookup.search')
-             ->middleware('throttle:30,1');
+             ->middleware(['throttle:tools', 'quota']);
 
         Route::get('/leakosint',        [LeakOsintController::class, 'index'])->name('leakosint');
         Route::post('/leakosint/query', [LeakOsintController::class, 'query'])->name('leakosint.query')
-             ->middleware('throttle:30,1');
+             ->middleware(['throttle:tools', 'quota']);
 
         Route::get('/multicheck',  [MulticheckController::class, 'index'])->name('multicheck');
         Route::post('/multicheck', [MulticheckController::class, 'check'])->name('multicheck.check')
-             ->middleware('throttle:30,1');
+             ->middleware(['throttle:tools', 'quota']);
 
         Route::get('/email-osint',  [EmailOsintController::class, 'index'])->name('email-osint');
         Route::post('/email-osint', [EmailOsintController::class, 'analyze'])->name('email-osint.analyze')
-             ->middleware('throttle:30,1');
+             ->middleware(['throttle:tools', 'quota']);
 
         Route::get('/phone-info',  [PhoneInfoController::class, 'index'])->name('phone-info');
         Route::post('/phone-info', [PhoneInfoController::class, 'analyze'])->name('phone-info.analyze')
-             ->middleware('throttle:30,1');
+             ->middleware(['throttle:tools', 'quota']);
 
         Route::get('/ip-geo',  [IpGeoController::class, 'index'])->name('ip-geo');
         Route::post('/ip-geo', [IpGeoController::class, 'lookup'])->name('ip-geo.lookup')
-             ->middleware('throttle:30,1');
+             ->middleware(['throttle:tools', 'quota']);
 
         Route::get('/whois',  [WhoisController::class, 'index'])->name('whois');
         Route::post('/whois', [WhoisController::class, 'lookup'])->name('whois.lookup')
-             ->middleware('throttle:30,1');
+             ->middleware(['throttle:tools', 'quota']);
 
         Route::get('/toutatis',  [ToutatisController::class, 'index'])->name('toutatis');
         Route::post('/toutatis', [ToutatisController::class, 'lookup'])->name('toutatis.lookup')
-             ->middleware('throttle:30,1');
+             ->middleware(['throttle:tools', 'quota']);
     });
 
     // History — semua authenticated, scope per role di controller
-    Route::get('/history',           [HistoryController::class,    'index'])->name('history');
-    Route::get('/history/export',    [HistoryController::class,    'export'])->name('history.export');
-    Route::get('/history/phone',     [PhoneLookupController::class, 'history'])->name('history.phone');
-    Route::get('/history/leakosint', [LeakOsintController::class,   'history'])->name('history.leakosint');
+    Route::get('/history',        [HistoryController::class, 'index'])->name('history');
+    Route::get('/history/export', [HistoryController::class, 'export'])->name('history.export');
 
     // Profile — semua authenticated
-    Route::get('/profile',  [ProfileController::class, 'index'])->name('profile');
-    Route::put('/profile',  [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile',               [ProfileController::class, 'index'])->name('profile');
+    Route::put('/profile',               [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/token',        [ProfileController::class, 'generateToken'])->name('profile.token');
 
     // Admin only
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {

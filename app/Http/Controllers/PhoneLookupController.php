@@ -35,14 +35,4 @@ class PhoneLookupController extends Controller
         return view('tools.phone-lookup', compact('result'));
     }
 
-    public function history()
-    {
-        $user  = auth()->user();
-        $query = SearchLog::where('tool', 'getcontact')->with('user');
-        if (!$user->isAdmin()) {
-            $query->where('user_id', $user->id);
-        }
-        $logs = $query->latest()->paginate(30);
-        return view('history.phone', compact('logs'));
-    }
 }

@@ -83,6 +83,10 @@
                 <span class="quick-item-icon">📸</span>
                 <span class="quick-item-label">Instagram</span>
             </a>
+            <a href="{{ route('history') }}" class="quick-item">
+                <span class="quick-item-icon">🕐</span>
+                <span class="quick-item-label">Riwayat</span>
+            </a>
         </div>
     </div>
 </div>

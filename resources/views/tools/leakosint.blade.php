@@ -8,7 +8,7 @@
         <h1>💧 LeakOSINT</h1>
         <p>Cari data breach — email, username, nomor telepon, atau kata kunci lain</p>
     </div>
-    <a href="{{ route('history.leakosint') }}" class="btn btn-secondary btn-sm">🕐 Riwayat</a>
+    <a href="{{ route('history') }}?tool=leakosint" class="btn btn-secondary btn-sm">🕐 Riwayat</a>
 </div>
 
 <div class="tool-input-card" style="max-width:620px;">

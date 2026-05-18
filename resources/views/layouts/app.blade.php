@@ -133,6 +133,18 @@
 {{-- Main --}}
 <main class="main-content">
     <div class="content-area animate-fade-up">
+        {{-- Global flash messages --}}
+        @if(session('success'))
+        <div class="alert alert-success" data-auto-close style="margin-bottom:16px;">{{ session('success') }}</div>
+        @endif
+        @if(session('error') || $errors->has('error'))
+        <div class="alert alert-danger" data-auto-close style="margin-bottom:16px;">
+            {{ session('error') ?? $errors->first('error') }}
+        </div>
+        @endif
+        @if($errors->has('quota'))
+        <div class="alert alert-warning" style="margin-bottom:16px;">{{ $errors->first('quota') }}</div>
+        @endif
         @yield('content')
     </div>
 </main>

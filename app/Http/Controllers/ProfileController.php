@@ -13,6 +13,16 @@ class ProfileController extends Controller
         return view('profile.index', ['user' => auth()->user()]);
     }
 
+    public function generateToken()
+    {
+        $plain = bin2hex(random_bytes(32)); // 64-char hex token
+        auth()->user()->update(['access_token_hash' => hash('sha256', $plain)]);
+
+        // Flash plain token once — never stored, never retrievable again
+        session()->flash('api_token_plain', $plain);
+        return back()->with('success', 'Token API baru berhasil dibuat. Simpan sekarang — tidak akan ditampilkan lagi.');
+    }
+
     public function update(Request $request)
     {
         $user = auth()->user();

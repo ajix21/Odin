@@ -37,6 +37,16 @@
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+let touLastResult = null;
+
+function downloadJson(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
 
 function setStatus(type, msg) {
     const colors = { loading: '#f59e0b', ready: '#22c55e', error: '#ef4444' };
@@ -82,6 +92,7 @@ async function doLookup() {
             body:    JSON.stringify({ username }),
         });
         const data = await resp.json();
+        touLastResult = data;
         renderResult(data);
     } catch (err) {
         panel.innerHTML = `
@@ -127,6 +138,12 @@ function renderResult(r) {
         html += `<div class="alert alert-info">ℹ Tidak ada postingan yang dapat diambil (akun kosong atau data publik terbatas).</div>`;
     }
 
+    html += `<div style="margin-top:12px;text-align:right;">
+        <button onclick="downloadJson(touLastResult,'toutatis_${r.username}.json')"
+            class="btn btn-sm" style="background:var(--c-surface);border:1px solid var(--c-border);">
+            ⬇ Download JSON
+        </button>
+    </div>`;
     html += '</div>';
     panel.innerHTML = html;
     setStatus('ready', `Profil @${escHtml(r.username)} berhasil dimuat (sumber: ${r.source})`);

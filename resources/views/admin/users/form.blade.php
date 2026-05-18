@@ -85,6 +85,17 @@
                 <div class="form-hint">Opsional. Jika diisi, digunakan untuk autentikasi tool tertentu.</div>
             </div>
 
+            <div class="form-group">
+                <label class="form-label">Kuota Pencarian Harian (opsional)</label>
+                <input type="number" name="daily_search_limit" class="form-control"
+                    style="width:160px;"
+                    min="1" max="9999"
+                    value="{{ old('daily_search_limit', $user?->daily_search_limit) }}"
+                    placeholder="Kosongkan = tak terbatas">
+                <div class="form-hint">Batas jumlah pencarian per hari. Kosongkan untuk tidak membatasi.</div>
+                @error('daily_search_limit')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+
             <div style="display:flex;gap:10px;margin-top:8px;">
                 <button type="submit" class="btn btn-primary">
                     {{ $user ? '💾 Simpan Perubahan' : '➕ Buat User' }}

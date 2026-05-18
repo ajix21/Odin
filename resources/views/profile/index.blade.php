@@ -89,11 +89,60 @@
         <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
     </form>
 
+    {{-- API Token --}}
+    <div class="card mt-4">
+        <div class="card-header"><h3>API Access Token</h3></div>
+        <div class="card-body" style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+            <p style="font-size:13px;color:var(--c-text-3);margin:0;">
+                Gunakan token ini untuk mengakses API secara langsung (multicheck, ip-geo, whois).
+                Sertakan di header: <code style="background:var(--c-surface);padding:2px 6px;border-radius:4px;">Authorization: Bearer {token}</code>
+            </p>
+
+            @if(session('api_token_plain'))
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px;">
+                <div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:6px;">TOKEN BARU — Simpan sekarang, tidak akan ditampilkan lagi</div>
+                <code style="font-size:12px;word-break:break-all;color:#166534;">{{ session('api_token_plain') }}</code>
+            </div>
+            @elseif($user->access_token_hash)
+            <div style="font-size:13px;color:var(--c-text-3);">
+                Token aktif: <code style="background:var(--c-surface);padding:2px 6px;border-radius:4px;">{{ substr($user->access_token_hash, 0, 8) }}••••••••</code>
+                <span style="font-size:11px;margin-left:4px;">(hanya hash yang disimpan)</span>
+            </div>
+            @else
+            <div style="font-size:13px;color:var(--c-text-3);">Belum ada token. Generate token untuk menggunakan API.</div>
+            @endif
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <form method="POST" action="{{ route('profile.token') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-primary"
+                        onclick="return confirm('{{ $user->access_token_hash ? 'Token lama akan diganti dan tidak bisa digunakan lagi. Lanjutkan?' : 'Generate token API baru?' }}')"
+                    >
+                        {{ $user->access_token_hash ? '🔄 Regenerate Token' : '+ Generate Token' }}
+                    </button>
+                </form>
+                <div style="font-size:11px;color:var(--c-text-3);align-self:center;">
+                    Base URL: <code style="background:var(--c-surface);padding:2px 5px;border-radius:3px;">{{ url('/api/v1') }}</code>
+                </div>
+            </div>
+
+            <div style="font-size:11px;color:var(--c-text-3);border-top:1px solid var(--c-border);padding-top:10px;">
+                Endpoint tersedia: <code>GET /api/v1/me</code> &nbsp;|&nbsp;
+                <code>POST /api/v1/multicheck</code> &nbsp;|&nbsp;
+                <code>POST /api/v1/ip-geo</code> &nbsp;|&nbsp;
+                <code>POST /api/v1/whois</code>
+            </div>
+        </div>
+    </div>
+
     <div class="card mt-4" style="padding:16px 20px;">
         <div style="font-size:12px;color:var(--c-text-3);">
             <div>Login terakhir: <strong>{{ $user->last_login_at ? $user->last_login_at->format('d/m/Y H:i') : '—' }}</strong></div>
             <div>IP terakhir: <strong class="font-mono">{{ $user->last_login_ip ?? '—' }}</strong></div>
             <div>Bergabung: <strong>{{ $user->created_at->format('d F Y') }}</strong></div>
+            @if($user->daily_search_limit)
+            <div>Kuota harian: <strong>{{ $user->daily_search_limit }} pencarian</strong></div>
+            @endif
         </div>
     </div>
 </div>

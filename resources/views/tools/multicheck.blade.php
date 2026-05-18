@@ -34,6 +34,16 @@
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+let mcLastResult = null;
+
+function downloadJson(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
 
 function setStatus(type, msg) {
     const colors = { loading: '#f59e0b', ready: '#22c55e', error: '#ef4444' };
@@ -74,6 +84,7 @@ async function doCheck() {
         });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.message || `HTTP ${resp.status}`);
+        mcLastResult = data;
         renderResults(data);
     } catch (err) {
         panel.innerHTML = `
@@ -100,10 +111,14 @@ function renderResults({ username, results }) {
             <div class="fw-6" style="font-size:14px;">
                 Hasil untuk <span class="font-mono" style="color:var(--c-blue-500);">@${escHtml(username)}</span>
             </div>
-            <div class="flex gap-2" style="flex-wrap:wrap;">
+            <div class="flex gap-2" style="flex-wrap:wrap;align-items:center;">
                 <span class="badge badge-green">✓ ${found.length} Ditemukan</span>
                 <span class="badge badge-gray">✗ ${notFound.length} Tidak Ada</span>
                 <span class="badge" style="background:#fef3c7;color:#92400e;font-size:11px;" title="Platform dengan tanda ⚠ menggunakan bot-protection — hasil mungkin tidak akurat">⚠ ${entries.filter(([,d])=>!d.reliable).length} Tidak Pasti</span>
+                <button onclick="downloadJson(mcLastResult,'multicheck_${username}.json')"
+                    class="btn btn-sm" style="background:var(--c-surface);border:1px solid var(--c-border);font-size:11px;padding:3px 10px;">
+                    ⬇ JSON
+                </button>
             </div>
         </div>`;
 

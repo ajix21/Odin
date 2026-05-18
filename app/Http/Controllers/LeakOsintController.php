@@ -57,14 +57,4 @@ class LeakOsintController extends Controller
         }
     }
 
-    public function history()
-    {
-        $user  = auth()->user();
-        $query = SearchLog::where('tool', 'leakosint')->with('user');
-        if (!$user->isAdmin()) {
-            $query->where('user_id', $user->id);
-        }
-        $logs = $query->latest()->paginate(30);
-        return view('history.leakosint', compact('logs'));
-    }
 }
