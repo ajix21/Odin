@@ -20,6 +20,7 @@ return new class extends Migration
 
     public function down(): void
     {
+        \DB::statement("DELETE FROM search_logs WHERE tool NOT IN ('getcontact','leakosint')");
         \DB::statement("ALTER TABLE search_logs MODIFY COLUMN tool ENUM('getcontact','leakosint') NOT NULL");
     }
 };
