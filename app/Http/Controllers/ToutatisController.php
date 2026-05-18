@@ -32,6 +32,6 @@ class ToutatisController extends Controller
             'ip_address'  => $request->ip(),
         ]);
 
-        return view('tools.toutatis', compact('result'));
+        return response()->json($result);
     }
 }
