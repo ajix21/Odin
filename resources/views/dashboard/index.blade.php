@@ -88,6 +88,57 @@
 </div>
 @endif
 
+{{-- Tool breakdown --}}
+@if($toolStats->isNotEmpty())
+<div class="card mb-6">
+    <div class="card-header flex-between">
+        <h3>📈 Penggunaan Per Tool</h3>
+        <a href="{{ route('history') }}" class="text-sm" style="color:var(--c-blue-500);">Lihat Semua →</a>
+    </div>
+    <div class="table-wrapper" style="border-radius:0;border:none;border-top:1px solid var(--c-border);">
+        <table class="data-table">
+            <thead>
+                <tr><th>Tool</th><th>Total</th><th>Berhasil</th><th>Tingkat Sukses</th></tr>
+            </thead>
+            <tbody>
+            @php
+            $toolMapStat = [
+                'getcontact'  => ['GetContact','badge-blue'],
+                'leakosint'   => ['LeakOSINT','badge-purple'],
+                'toutatis'    => ['Instagram','badge-pink'],
+                'whois'       => ['WHOIS','badge-cyan'],
+                'ip-geo'      => ['IP Geo','badge-green'],
+                'email-osint' => ['Email OSINT','badge-yellow'],
+                'multicheck'  => ['Username Check','badge-orange'],
+                'phone-info'  => ['Phone OSINT','badge-blue'],
+                'phone'       => ['Phone Lookup','badge-blue'],
+            ];
+            @endphp
+            @foreach($toolStats as $ts)
+            @php
+                [$tsLabel,$tsBadge] = $toolMapStat[$ts->tool] ?? [ucfirst($ts->tool),'badge-gray'];
+                $rate = $ts->total > 0 ? round($ts->success_count / $ts->total * 100) : 0;
+            @endphp
+            <tr>
+                <td><span class="badge {{ $tsBadge }}">{{ $tsLabel }}</span></td>
+                <td class="fw-6">{{ number_format($ts->total) }}</td>
+                <td>{{ number_format($ts->success_count) }}</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="flex:1;height:6px;background:var(--c-border);border-radius:3px;min-width:60px;">
+                            <div style="height:6px;border-radius:3px;background:{{ $rate >= 80 ? '#22c55e' : ($rate >= 50 ? '#f59e0b' : '#ef4444') }};width:{{ $rate }}%;"></div>
+                        </div>
+                        <span style="font-size:12px;color:var(--c-text-3);min-width:30px;">{{ $rate }}%</span>
+                    </div>
+                </td>
+            </tr>
+            @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
 {{-- Activity --}}
 <div class="{{ auth()->user()->isAdmin() ? 'grid-2' : '' }}" style="{{ auth()->user()->isAdmin() ? '' : '' }}">
 
@@ -114,12 +165,24 @@
                     </tr>
                 </thead>
                 <tbody>
+                @php
+                $toolMap = [
+                    'getcontact'  => ['GetContact','badge-blue'],
+                    'leakosint'   => ['LeakOSINT','badge-purple'],
+                    'toutatis'    => ['Instagram','badge-pink'],
+                    'whois'       => ['WHOIS','badge-cyan'],
+                    'ip-geo'      => ['IP Geo','badge-green'],
+                    'email-osint' => ['Email OSINT','badge-yellow'],
+                    'multicheck'  => ['Username Check','badge-orange'],
+                    'phone-info'  => ['Phone OSINT','badge-blue'],
+                    'phone'       => ['Phone Lookup','badge-blue'],
+                ];
+                @endphp
                 @foreach($recentLogs as $log)
+                @php [$tLabel,$tBadge] = $toolMap[$log->tool] ?? [ucfirst($log->tool),'badge-gray']; @endphp
                 <tr>
                     <td>
-                        <span class="badge {{ $log->tool === 'getcontact' ? 'badge-blue' : 'badge-purple' }}">
-                            {{ $log->tool === 'getcontact' ? 'GetContact' : 'LeakOSINT' }}
-                        </span>
+                        <span class="badge {{ $tBadge }}">{{ $tLabel }}</span>
                     </td>
                     <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $log->query }}</td>
                     @if(auth()->user()->isAdmin())

@@ -37,6 +37,9 @@
         <a href="{{ route('dashboard') }}" class="sidebar-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <span class="sidebar-icon">⊞</span> Dashboard
         </a>
+        <a href="{{ route('history') }}" class="sidebar-item {{ request()->routeIs('history') ? 'active' : '' }}">
+            <span class="sidebar-icon">🕐</span> Riwayat Pencarian
+        </a>
     </div>
 
     <hr class="sidebar-divider">
@@ -120,6 +123,9 @@
 
     <hr class="sidebar-divider">
     <div class="sidebar-section" style="padding-top:4px;">
+        <a href="{{ route('profile') }}" class="sidebar-item {{ request()->routeIs('profile') ? 'active' : '' }}">
+            <span class="sidebar-icon">👤</span> Profil Saya
+        </a>
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button type="submit" class="logout-btn">

@@ -31,6 +31,12 @@ class DashboardController extends Controller
             ? LoginAttempt::latest('created_at')->limit(10)->get()
             : collect();
 
-        return view('dashboard.index', compact('stats', 'recentLogs', 'recentLogins'));
+        $toolStats = (clone $logsQuery)
+            ->selectRaw('tool, count(*) as total, sum(status = "success") as success_count')
+            ->groupBy('tool')
+            ->orderByDesc('total')
+            ->get();
+
+        return view('dashboard.index', compact('stats', 'recentLogs', 'recentLogins', 'toolStats'));
     }
 }

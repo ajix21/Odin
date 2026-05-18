@@ -4,11 +4,13 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailOsintController;
+use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\IpGeoController;
 use App\Http\Controllers\LeakOsintController;
 use App\Http\Controllers\MulticheckController;
 use App\Http\Controllers\PhoneInfoController;
 use App\Http\Controllers\PhoneLookupController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ToutatisController;
 use App\Http\Controllers\WhoisController;
@@ -61,8 +63,14 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // History — semua authenticated, scope per role di controller
+    Route::get('/history',           [HistoryController::class,    'index'])->name('history');
+    Route::get('/history/export',    [HistoryController::class,    'export'])->name('history.export');
     Route::get('/history/phone',     [PhoneLookupController::class, 'history'])->name('history.phone');
     Route::get('/history/leakosint', [LeakOsintController::class,   'history'])->name('history.leakosint');
+
+    // Profile — semua authenticated
+    Route::get('/profile',  [ProfileController::class, 'index'])->name('profile');
+    Route::put('/profile',  [ProfileController::class, 'update'])->name('profile.update');
 
     // Admin only
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -73,6 +81,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/users/{user}',      [AdminController::class, 'updateUser'])->name('users.update');
         Route::delete('/users/{user}',   [AdminController::class, 'destroyUser'])->name('users.destroy');
         Route::get('/logs',              [AdminController::class, 'logs'])->name('logs');
+        Route::get('/logs/export',       [AdminController::class, 'exportLogs'])->name('logs.export');
     });
 
     Route::middleware(['role:admin'])->group(function () {

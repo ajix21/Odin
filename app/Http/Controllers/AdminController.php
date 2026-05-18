@@ -82,10 +82,60 @@ class AdminController extends Controller
         return redirect()->route('admin.users')->with('success', 'User berhasil dihapus.');
     }
 
-    public function logs()
+    public function logs(Request $request)
     {
-        $searchLogs = SearchLog::with('user')->latest()->paginate(30, ['*'], 'search_page');
-        $loginLogs  = LoginAttempt::latest('created_at')->paginate(50, ['*'], 'login_page');
-        return view('admin.logs', compact('searchLogs', 'loginLogs'));
+        $searchQuery = SearchLog::with('user');
+
+        if ($request->filled('tool'))      { $searchQuery->where('tool', $request->tool); }
+        if ($request->filled('status'))    { $searchQuery->where('status', $request->status); }
+        if ($request->filled('user_id'))   { $searchQuery->where('user_id', $request->user_id); }
+        if ($request->filled('q'))         { $searchQuery->where('query', 'like', '%' . $request->q . '%'); }
+        if ($request->filled('date_from')) { $searchQuery->whereDate('created_at', '>=', $request->date_from); }
+        if ($request->filled('date_to'))   { $searchQuery->whereDate('created_at', '<=', $request->date_to); }
+
+        $loginQuery = LoginAttempt::query();
+        if ($request->filled('login_username')) {
+            $loginQuery->where('username', 'like', '%' . $request->login_username . '%');
+        }
+        if ($request->filled('login_status')) {
+            $loginQuery->where('success', $request->login_status === 'success');
+        }
+
+        $searchLogs = $searchQuery->latest()->paginate(30, ['*'], 'search_page')->withQueryString();
+        $loginLogs  = $loginQuery->latest()->paginate(50, ['*'], 'login_page')->withQueryString();
+        $users      = User::orderBy('username')->get(['id', 'username']);
+
+        return view('admin.logs', compact('searchLogs', 'loginLogs', 'users'));
+    }
+
+    public function exportLogs(Request $request)
+    {
+        $query = SearchLog::with('user');
+        if ($request->filled('tool'))      { $query->where('tool', $request->tool); }
+        if ($request->filled('status'))    { $query->where('status', $request->status); }
+        if ($request->filled('user_id'))   { $query->where('user_id', $request->user_id); }
+        if ($request->filled('q'))         { $query->where('query', 'like', '%' . $request->q . '%'); }
+        if ($request->filled('date_from')) { $query->whereDate('created_at', '>=', $request->date_from); }
+        if ($request->filled('date_to'))   { $query->whereDate('created_at', '<=', $request->date_to); }
+
+        $logs     = $query->latest()->limit(10000)->get();
+        $filename = 'audit_search_' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($logs) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($handle, ['Waktu', 'User', 'Tool', 'Query', 'Status', 'IP']);
+            foreach ($logs as $log) {
+                fputcsv($handle, [
+                    $log->created_at->format('Y-m-d H:i:s'),
+                    $log->user?->username ?? '—',
+                    $log->tool,
+                    $log->query,
+                    $log->status,
+                    $log->ip_address,
+                ]);
+            }
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 }
