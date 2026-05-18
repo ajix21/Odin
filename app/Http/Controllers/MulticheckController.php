@@ -33,6 +33,6 @@ class MulticheckController extends Controller
             'ip_address'  => $request->ip(),
         ]);
 
-        return view('tools.multicheck', compact('results', 'username'));
+        return response()->json(['username' => $username, 'results' => $results]);
     }
 }
