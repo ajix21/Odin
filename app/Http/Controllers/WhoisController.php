@@ -32,6 +32,6 @@ class WhoisController extends Controller
             'ip_address'  => $request->ip(),
         ]);
 
-        return view('tools.whois', compact('result'));
+        return response()->json($result);
     }
 }

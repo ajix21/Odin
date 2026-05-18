@@ -32,6 +32,6 @@ class PhoneInfoController extends Controller
             'ip_address'  => $request->ip(),
         ]);
 
-        return view('tools.phone-info', compact('result'));
+        return response()->json($result);
     }
 }

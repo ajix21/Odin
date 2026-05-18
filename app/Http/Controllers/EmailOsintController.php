@@ -27,10 +27,10 @@ class EmailOsintController extends Controller
             'tool'        => 'email-osint',
             'query'       => $email,
             'result_json' => ['valid' => $result['valid'] ?? false, 'disposable' => $result['disposable'] ?? false, 'gravatar' => (bool)($result['gravatar'] ?? false)],
-            'status'      => 'success',
+            'status'      => ($result['valid'] ?? false) ? 'success' : 'failed',
             'ip_address'  => $request->ip(),
         ]);
 
-        return view('tools.email-osint', compact('result'));
+        return response()->json($result);
     }
 }

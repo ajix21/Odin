@@ -32,7 +32,7 @@ class PhoneLookupController extends Controller
             'ip_address'    => $request->ip(),
         ]);
 
-        return view('tools.phone-lookup', compact('result'));
+        return response()->json($result);
     }
 
 }

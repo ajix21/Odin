@@ -67,9 +67,12 @@ class AdminController extends Controller
             'daily_search_limit' => 'nullable|integer|min:1|max:9999',
         ]);
 
-        $data = $request->only(['name', 'username', 'email', 'role', 'api_token']);
+        $data = $request->only(['name', 'username', 'email', 'role']);
         $data['is_active']          = $request->boolean('is_active');
         $data['daily_search_limit'] = $request->daily_search_limit ?: null;
+        if ($request->filled('api_token')) {
+            $data['api_token'] = $request->api_token;
+        }
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);

@@ -32,6 +32,6 @@ class IpGeoController extends Controller
             'ip_address'  => $request->ip(),
         ]);
 
-        return view('tools.ip-geo', compact('result'));
+        return response()->json($result);
     }
 }
